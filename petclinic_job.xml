@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.16">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.TimerTrigger>
+          <spec>H/15 * * * *</spec>
+        </hudson.triggers.TimerTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.42">
+    <script>node {
+   stage(&apos;Preparation&apos;) {
+    git &apos;https://github.com/spring-projects/spring-petclinic.git&apos;
+   }
+   stage(&apos;Build&apos;) {
+    sh &quot;mvn -Dmaven.test.skip=true clean package&quot;
+   }
+   stage(&apos;Results&apos;) {
+    withEnv([&apos;JENKINS_NODE_COOKIE=do_not_kill&apos;]) {
+        sh (&apos;&apos;&apos;#!/bin/bash
+        APP_ID=$(ps -ef | grep spring-petclinic-1.5.1.jar | grep java | awk &apos;{print $2}&apos;)
+        if [ -n &quot;${APP_ID}&quot; ]; then
+	        kill $APP_ID
+        fi
+        nohup java -jar target/spring-petclinic-1.5.1.jar &gt;&gt; console.log 2&gt;&amp;1&amp;
+        &apos;&apos;&apos;)
+        }
+   }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
